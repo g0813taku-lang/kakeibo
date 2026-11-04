@@ -386,7 +386,7 @@ function init(){
     showScreen("app"); startData();
   });
 }
-$("#authForm").addEventListener("submit",async e=>{
+  $("#loginBox").addEventListener("submit",async e=>{
   e.preventDefault(); $("#aErr").textContent="";
   try{ await auth.signInWithEmailAndPassword($("#aEmail").value.trim(), $("#aPass").value); }
   catch(err){ $("#aErr").textContent=authErr(err); }
