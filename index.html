@@ -51,6 +51,33 @@ button{cursor:pointer}
   margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px))) 0;padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
 .top-in{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .brand{font-weight:700;font-size:16px;letter-spacing:.04em;margin-right:auto}
+.vseg{display:inline-grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.vseg button{border:0;background:none;padding:6px 14px;font-size:14px;font-weight:500}
+.vseg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.search{flex:1 1 100%;min-width:0;order:9}
+.search input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;font-size:16px}
+.top.searching .month,.top.searching .vseg{opacity:.35;pointer-events:none}
+@media (min-width:821px){.search{flex:0 1 280px;order:0}}
+@media (max-width:620px){.top{position:static}.brand{flex-basis:100%}}
+.sub{font-size:13px;color:var(--muted);margin-top:2px}
+.cat.static:hover{background:none}
+.ychart{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 8px 8px}
+.ycol{border:0;background:none;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:0;border-radius:6px;min-width:0}
+.ycol:hover{background:var(--soft)}
+.ybars{height:150px;display:flex;align-items:flex-end;justify-content:center;gap:2px;border-bottom:1px solid var(--line)}
+.ybars i{display:block;width:36%;max-width:16px;border-radius:3px 3px 0 0}
+.ybars .be{background:var(--accent)} .ybars .bi{background:var(--income)}
+.yl{font-size:11px;color:var(--muted);text-align:center}
+.ycol.cur .yl{color:var(--ink);font-weight:700}
+.ytable{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.ytable th,.ytable td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.ytable th:first-child,.ytable td:first-child{text-align:left}
+.ytable td.muted{color:var(--muted);text-align:center;font-size:13px}
+.ytable th{font-size:12px;color:var(--muted);font-weight:500}
+.ytable tbody tr{cursor:pointer}
+.ytable tbody tr:hover{background:var(--soft)}
+.ytable tfoot td{font-weight:700;border-bottom:0}
+.sresult{display:flex;gap:28px;flex-wrap:wrap;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
 .month{display:flex;align-items:center;gap:4px}
 .month b{font-size:17px;min-width:7.5em;text-align:center;font-weight:700}
 .iconbtn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:18px;line-height:1}
@@ -188,7 +215,7 @@ h2{font-size:14px;font-weight:700;letter-spacing:.08em;margin:0 0 10px;color:var
     </div>
     <div class="card" id="setupBox" hidden>
       <b>まだFirebaseの設定が済んでいません。</b>
-      <div>index.html の上のほうにある firebaseConfig の部分に、Firebaseの画面でコピーした設定を貼り付けてください。</div>
+      <div>config.js にFirebaseの設定を書いて、index.html と同じ場所に置いてください。</div>
     </div>
   </div>
 </div>
@@ -202,7 +229,12 @@ h2{font-size:14px;font-weight:700;letter-spacing:.08em;margin:0 0 10px;color:var
       <b id="mLabel">—</b>
       <button class="iconbtn" id="nextM" aria-label="次の月">›</button>
     </div>
-    <button class="btn" id="openImport">PayPay CSVを取り込む</button>
+    <div class="vseg" role="group" aria-label="表示">
+      <button type="button" id="vMonth" aria-pressed="true">月</button>
+      <button type="button" id="vYear" aria-pressed="false">年</button>
+    </div>
+    <button class="btn" id="openImport">CSVを取り込む</button>
+    <div class="search"><input id="q" type="search" placeholder="検索(お店・カテゴリ・金額)" autocomplete="off" enterkeyhint="search" aria-label="明細を検索"></div>
   </div>
 </header>
 
@@ -266,19 +298,7 @@ h2{font-size:14px;font-weight:700;letter-spacing:.08em;margin:0 0 10px;color:var
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>
-/* ===== ここをFirebaseの設定に置き換えてください ===== */
-const firebaseConfig = {
-  apiKey: "AIzaSyD9haLMTx0gwvT2dvEGZoZoc0slZqHrVU8",
-  authDomain: "yamanouchi-kakeibo.firebaseapp.com",
-  projectId: "yamanouchi-kakeibo",
-  storageBucket: "yamanouchi-kakeibo.firebasestorage.app",
-  messagingSenderId: "429495687807",
-  appId: "1:429495687807:web:f511a10d17cb02dc62fd4a"
-};
-/* 家計簿の名前(変更不要) */
-const HOUSEHOLD = "yamanouchi";
-</script>
+<script src="config.js"></script>
 <script>
 (() => {
 const EXP_CATS = ["食費","外食","日用品","交通","趣味・娯楽","衣服・美容","医療","通信・サブスク","住まい・光熱","交際費","その他"];
@@ -305,14 +325,17 @@ const pad = (n)=>String(n).padStart(2,"0");
 const today = ()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
 const WD = ["日","月","火","水","木","金","土"];
 
-const state = { ym: today().slice(0,7), src:"all", cat:null, txs:new Map(), map:{}, ready:false, mode:"loading", stale:false };
+const state = { ym: today().slice(0,7), view:"month", q:"", src:"all", cat:null, txs:new Map(), map:{}, ready:false, mode:"loading", stale:false };
 
 /* ---------- Firebase ---------- */
 let txCol=null, homeRef=null, unsubs=[], loadTimer=null;
-const configured = firebaseConfig && firebaseConfig.apiKey && !/ここに/.test(firebaseConfig.apiKey);
+const CONFIG = (typeof firebaseConfig!=="undefined") ? firebaseConfig : null;
+const HOUSEHOLD = (typeof window.HOUSEHOLD_NAME==="string" && window.HOUSEHOLD_NAME) || "yamanouchi";
+const sdkLoaded = typeof firebase!=="undefined";
+const configured = sdkLoaded && CONFIG && CONFIG.apiKey && !/ここに/.test(CONFIG.apiKey);
 let auth=null, fsdb=null;
 if(configured){
-  firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(CONFIG);
   auth=firebase.auth(); fsdb=firebase.firestore();
   fsdb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
@@ -378,7 +401,9 @@ function showScreen(name){
   $("#shell").hidden = name!=="app";
 }
 function init(){
-  if(!configured){ showScreen("setup"); return; }
+  if(!configured){
+    if(!sdkLoaded) $("#setupBox").innerHTML="<b>読み込みに失敗しました。</b><div>通信状況を確認して、アプリを開き直してください。</div>";
+    showScreen("setup"); return; }
   auth.onAuthStateChanged(async u=>{
     if(!u){ stopData(); showScreen("auth"); return; }
     if(!u.emailVerified){ stopData(); $("#vEmail").textContent=u.email; showScreen("verify"); return; }
@@ -386,7 +411,7 @@ function init(){
     showScreen("app"); startData();
   });
 }
-  $("#loginBox").addEventListener("submit",async e=>{
+$("#loginBox").addEventListener("submit",async e=>{
   e.preventDefault(); $("#aErr").textContent="";
   try{ await auth.signInWithEmailAndPassword($("#aEmail").value.trim(), $("#aPass").value); }
   catch(err){ $("#aErr").textContent=authErr(err); }
@@ -416,49 +441,127 @@ $("#vOut").onclick=()=>auth.signOut();
 $("#logout").onclick=()=>auth.signOut();
 
 /* ---------- render ---------- */
-function monthTxs(){ return [...state.txs.values()].filter(t=>t.date && t.date.startsWith(state.ym)); }
-function render(){
-  const [y,m]=state.ym.split("-").map(Number);
-  $("#mLabel").textContent = `${y}年${m}月`;
-  const app=$("#app");
-  if(!state.ready){ app.innerHTML='<p class="loading">読み込み中…</p>'; return; }
-  if(state.txs.size===0){ app.innerHTML = emptyHTML(); bindEmpty(); return; }
-
-  const txs = monthTxs();
-  const exp = txs.filter(t=>t.type==="expense"), inc = txs.filter(t=>t.type==="income");
-  const sum = a=>a.reduce((s,t)=>s+(+t.amount||0),0);
+const sum = a=>a.reduce((s,t)=>s+(+t.amount||0),0);
+const srcLabel = t=>t.source==="paypay"?"PayPay":t.source==="cash"?"現金":"その他";
+const sortDesc = a=>a.sort((x,y)=>(y.date+(y.time||"")).localeCompare(x.date+(x.time||"")));
+const nz = s=>String(s??"").normalize("NFKC").toLowerCase();
+function periodTxs(){ const key = state.view==="year"? state.ym.slice(0,4) : state.ym; return [...state.txs.values()].filter(t=>t.date && t.date.startsWith(key)); }
+function rowHTML(t){
+  return `<button class="row" data-id="${esc(t.id)}">
+    <span class="dot" style="background:${CAT_COLOR[t.category]||"var(--c10)"}"></span>
+    <span style="min-width:0"><div class="t">${esc(t.memo||t.category)}</div>
+      <div class="s"><span>${esc(t.category)}</span>${t.time?`<span class="num">${esc(t.time)}</span>`:""}${t.who&&t.who!=="本人"?`<span class="tag">${esc(t.who)}</span>`:""}<span class="tag ${t.source==="paypay"?"pp":""}">${srcLabel(t)}</span></div></span>
+    <span class="a num ${t.type==="income"?"pos":""}">${t.type==="income"?"+":""}${yen(t.amount)}</span>
+  </button>`;
+}
+function daysHTML(list, withYear){
+  const days={}; list.forEach(t=>{(days[t.date]=days[t.date]||[]).push(t)});
+  return Object.entries(days).map(([d,arr])=>{
+    const dt=new Date(d+"T00:00:00"), dayE=sum(arr.filter(t=>t.type==="expense"));
+    return `<div class="day"><div class="dayhead"><span>${withYear?dt.getFullYear()+"年":""}${dt.getMonth()+1}月${dt.getDate()}日(${WD[dt.getDay()]})</span><span class="num">${dayE?yen(dayE):""}</span></div>${arr.map(rowHTML).join("")}</div>`;
+  }).join("");
+}
+function summaryHTML(exp, inc, label, extra){
   const E=sum(exp), I=sum(inc), D=I-E;
   const ppE=sum(exp.filter(t=>t.source==="paypay")), cashE=sum(exp.filter(t=>t.source==="cash")), otE=E-ppE-cashE;
-  const pct=(v)=>E? (v/E*100):0;
-
-  const byCat={}; exp.forEach(t=>{byCat[t.category]=(byCat[t.category]||0)+(+t.amount||0)});
-  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
-  const maxC=cats.length?cats[0][1]:1;
-
-  let list = txs.filter(t=> state.src==="all" || t.source===state.src);
-  if(state.cat) list=list.filter(t=>t.category===state.cat);
-  list.sort((a,b)=> (b.date+(b.time||"")).localeCompare(a.date+(a.time||"")) );
-  const days={}; list.forEach(t=>{(days[t.date]=days[t.date]||[]).push(t)});
-
-  app.innerHTML = `
-  <section class="summary">
-    <div class="s-exp"><div class="lbl">今月の支出</div><div class="big num">${yen(E)}</div></div>
+  const pct=v=>E?(v/E*100):0;
+  return `<section class="summary">
+    <div class="s-exp"><div class="lbl">${label}</div><div class="big num">${yen(E)}</div>${extra||""}</div>
     <div><div class="lbl">収入</div><div class="mid num pos">${yen(I)}</div></div>
     <div><div class="lbl">収支</div><div class="mid num ${D<0?"neg":"pos"}">${D<0?"−":"+"}${yen(Math.abs(D))}</div></div>
     <div class="split">
       <div class="splitbar" aria-hidden="true"><i style="width:${pct(ppE)}%;background:var(--c1)"></i><i style="width:${pct(cashE)}%;background:var(--c8)"></i><i style="width:${pct(otE)}%;background:var(--c10)"></i></div>
       <div class="legend"><span style="--dot:var(--c1)">PayPay <b class="num">${yen(ppE)}</b></span><span style="--dot:var(--c8)">現金 <b class="num">${yen(cashE)}</b></span>${otE?`<span style="--dot:var(--c10)">その他 <b class="num">${yen(otE)}</b></span>`:""}</div>
     </div>
+  </section>`;
+}
+function catsHTML(exp, clickable, emptyText){
+  const E=sum(exp), byCat={}; exp.forEach(t=>{byCat[t.category]=(byCat[t.category]||0)+(+t.amount||0)});
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]); const maxC=cats.length?cats[0][1]:1;
+  if(!cats.length) return `<p class="quiet">${emptyText}</p>`;
+  const tag=clickable?"button":"div";
+  return `<div class="cats">${cats.map(([c,v])=>`
+    <${tag} class="cat ${clickable?"":"static"} ${state.cat===c&&clickable?"on":""}" ${clickable?`data-cat="${esc(c)}" aria-pressed="${state.cat===c}"`:""}>
+      <span class="nm">${esc(c)}</span>
+      <span class="bar"><i style="width:${v/maxC*100}%;background:${CAT_COLOR[c]||"var(--c10)"}"></i></span>
+      <span class="amt num">${yen(v)}<span class="pct">${Math.round(E?v/E*100:0)}%</span></span>
+    </${tag}>`).join("")}</div>`;
+}
+function matches(t, terms){
+  const hay=nz([t.memo,t.category,t.kind,t.method,t.who,srcLabel(t),t.date,t.date&&t.date.replace(/-/g,"/")].join(" "));
+  return terms.every(q=>{ const d=q.replace(/[¥,円]/g,""); return hay.includes(q) || (/^\d+$/.test(d) && String(t.amount)===d); });
+}
+function searchHTML(){
+  const terms=nz(state.q).split(/\s+/).filter(Boolean);
+  const hits=sortDesc([...state.txs.values()].filter(t=>matches(t,terms)));
+  const shown=hits.slice(0,300);
+  const E=sum(hits.filter(t=>t.type==="expense")), I=sum(hits.filter(t=>t.type==="income"));
+  return `<section class="sresult">
+      <div><div class="lbl">「${esc(state.q.trim())}」の検索結果</div><div class="mid">${hits.length}件</div></div>
+      <div><div class="lbl">支出の合計</div><div class="mid num">${yen(E)}</div></div>
+      ${I?`<div><div class="lbl">収入の合計</div><div class="mid num pos">${yen(I)}</div></div>`:""}
+    </section>
+    <section style="margin-top:20px">${hits.length? daysHTML(shown,true) + (hits.length>300?`<p class="quiet">新しい順に300件まで表示しています。言葉を足して絞り込んでください。</p>`:"") : `<p class="quiet">見つかりませんでした。お店の名前の一部、カテゴリ名、金額(例:1500)で探せます。</p>`}</section>`;
+}
+function yearHTML(y, txs){
+  const exp=txs.filter(t=>t.type==="expense"), inc=txs.filter(t=>t.type==="income");
+  const months=Array.from({length:12},(_,i)=>{ const key=`${y}-${pad(i+1)}`; const mt=txs.filter(t=>t.date.startsWith(key));
+    return {key,n:i+1,has:mt.length>0,E:sum(mt.filter(t=>t.type==="expense")),I:sum(mt.filter(t=>t.type==="income"))}; });
+  const active=months.filter(m=>m.has), avg=active.length? sum(exp)/active.length : 0;
+  const max=Math.max(1,...months.map(m=>Math.max(m.E,m.I)));
+  const curKey=today().slice(0,7);
+  const extra=active.length?`<div class="sub">月平均 <span class="num">${yen(avg)}</span>(記録のある${active.length}か月)</div>`:"";
+  const tE=sum(exp), tI=sum(inc), tD=tI-tE;
+  return summaryHTML(exp,inc,`${y}年の支出`,extra) + `
+  <section style="margin-top:24px">
+    <h2>月ごとの収支</h2>
+    <div class="ychart">
+      ${months.map(m=>`<button class="ycol ${m.key===curKey?"cur":""}" data-month="${m.key}" aria-label="${m.n}月 支出${yen(m.E)} 収入${yen(m.I)}">
+        <span class="ybars"><i class="be" style="height:${m.E/max*100}%"></i><i class="bi" style="height:${m.I/max*100}%"></i></span>
+        <span class="yl">${m.n}月</span></button>`).join("")}
+    </div>
+    <div class="legend" style="margin-top:8px"><span style="--dot:var(--accent)">支出</span><span style="--dot:var(--income)">収入</span><span>月を押すとその月の明細を開きます</span></div>
   </section>
   <div class="grid">
     <section>
+      <h2>カテゴリ別の支出(${y}年)</h2>
+      ${catsHTML(exp,false,"この年の支出はまだありません。")}
+    </section>
+    <section>
+      <h2>月別の一覧</h2>
+      <div style="overflow-x:auto"><table class="ytable">
+        <thead><tr><th>月</th><th>収入</th><th>支出</th><th>収支</th></tr></thead>
+        <tbody>${months.map(m=>{const D=m.I-m.E; return `<tr data-month="${m.key}" tabindex="0"><td>${m.n}月</td>${m.has?`<td class="num pos">${yen(m.I)}</td><td class="num">${yen(m.E)}</td><td class="num ${D<0?"neg":"pos"}">${D<0?"−":"+"}${yen(Math.abs(D))}</td>`:`<td class="muted" colspan="3">記録なし</td>`}</tr>`}).join("")}</tbody>
+        <tfoot><tr><td>合計</td><td class="num pos">${yen(tI)}</td><td class="num">${yen(tE)}</td><td class="num ${tD<0?"neg":"pos"}">${tD<0?"−":"+"}${yen(Math.abs(tD))}</td></tr></tfoot>
+      </table></div>
+    </section>
+  </div>`;
+}
+function render(){
+  const [y,m]=state.ym.split("-").map(Number);
+  const searching=!!state.q.trim();
+  $("#mLabel").textContent = state.view==="year"? `${y}年` : `${y}年${m}月`;
+  $("#vMonth").setAttribute("aria-pressed",state.view==="month");
+  $("#vYear").setAttribute("aria-pressed",state.view==="year");
+  $("#prevM").setAttribute("aria-label",state.view==="year"?"前の年":"前の月");
+  $("#nextM").setAttribute("aria-label",state.view==="year"?"次の年":"次の月");
+  document.querySelector(".top").classList.toggle("searching",searching);
+  const app=$("#app");
+  if(!state.ready){ app.innerHTML='<p class="loading">読み込み中…</p>'; return; }
+  if(state.txs.size===0){ app.innerHTML = emptyHTML(); return; }
+  if(searching){ app.innerHTML=searchHTML(); return; }
+  const txs=periodTxs();
+  if(state.view==="year"){ app.innerHTML=yearHTML(y,txs); return; }
+
+  const exp = txs.filter(t=>t.type==="expense"), inc = txs.filter(t=>t.type==="income");
+  let list = txs.filter(t=> state.src==="all" || t.source===state.src);
+  if(state.cat) list=list.filter(t=>t.category===state.cat);
+  sortDesc(list);
+  app.innerHTML = summaryHTML(exp,inc,"今月の支出") + `
+  <div class="grid">
+    <section>
       <h2>カテゴリ別の支出</h2>
-      ${cats.length?`<div class="cats">${cats.map(([c,v])=>`
-        <button class="cat ${state.cat===c?"on":""}" data-cat="${esc(c)}" aria-pressed="${state.cat===c}">
-          <span class="nm">${esc(c)}</span>
-          <span class="bar"><i style="width:${v/maxC*100}%;background:${CAT_COLOR[c]||"var(--c10)"}"></i></span>
-          <span class="amt num">${yen(v)}<span class="pct">${Math.round(pct(v))}%</span></span>
-        </button>`).join("")}</div>`:`<p class="quiet">この月の支出はまだありません。</p>`}
+      ${catsHTML(exp,true,"この月の支出はまだありません。")}
     </section>
     <section>
       <h2>明細${state.cat?` ・ ${esc(state.cat)}`:""}</h2>
@@ -466,15 +569,7 @@ function render(){
         ${[["all","すべて"],["paypay","PayPay"],["cash","現金"]].map(([k,l])=>`<button class="chip" data-src="${k}" aria-pressed="${state.src===k}">${l}</button>`).join("")}
         ${state.cat?`<button class="chip" data-clearcat aria-pressed="true">${esc(state.cat)} ×</button>`:""}
       </div>
-      ${list.length? Object.entries(days).map(([d,arr])=>{
-        const dt=new Date(d+"T00:00:00"); const dayE=arr.filter(t=>t.type==="expense").reduce((s,t)=>s+(+t.amount||0),0);
-        return `<div class="day"><div class="dayhead"><span>${dt.getMonth()+1}月${dt.getDate()}日(${WD[dt.getDay()]})</span><span class="num">${dayE?yen(dayE):""}</span></div>
-        ${arr.map(t=>`<button class="row" data-id="${esc(t.id)}">
-          <span class="dot" style="background:${CAT_COLOR[t.category]||"var(--c10)"}"></span>
-          <span style="min-width:0"><div class="t">${esc(t.memo||t.category)}</div>
-            <div class="s"><span>${esc(t.category)}</span>${t.time?`<span class="num">${esc(t.time)}</span>`:""}${t.who&&t.who!=="本人"?`<span class="tag">${esc(t.who)}</span>`:""}<span class="tag ${t.source==="paypay"?"pp":""}">${t.source==="paypay"?"PayPay":t.source==="cash"?"現金":"その他"}</span></div></span>
-          <span class="a num ${t.type==="income"?"pos":""}">${t.type==="income"?"+":""}${yen(t.amount)}</span>
-        </button>`).join("")}</div>`}).join("") : `<p class="quiet">${txs.length?"条件に合う明細はありません。":"この月の記録はありません。右下の「現金を記録」か、CSVの取り込みから追加できます。"}</p>`}
+      ${list.length? daysHTML(list,false) : `<p class="quiet">${txs.length?"条件に合う明細はありません。":"この月の記録はありません。右下の「現金を記録」か、CSVの取り込みから追加できます。"}</p>`}
     </section>
   </div>`;
 }
@@ -493,10 +588,11 @@ function emptyHTML(){
       </ol>
     </div></div>`;
 }
-function bindEmpty(){}
 
 /* ---------- events: main ---------- */
 $("#app").addEventListener("click",e=>{
+  const mo=e.target.closest("[data-month]");
+  if(mo){ openMonth(mo.dataset.month); return; }
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.act==="import") openImport();
   else if(b.dataset.act==="add") openEntry();
@@ -505,7 +601,12 @@ $("#app").addEventListener("click",e=>{
   else if(b.hasAttribute("data-clearcat")){ state.cat=null; render(); }
   else if(b.dataset.id){ openEntry(state.txs.get(b.dataset.id)); }
 });
-function shiftMonth(k){ const [y,m]=state.ym.split("-").map(Number); const d=new Date(y,m-1+k,1); state.ym=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; state.cat=null; render(); }
+function openMonth(key){ state.view="month"; state.ym=key; state.cat=null; render(); window.scrollTo(0,0); }
+$("#app").addEventListener("keydown",e=>{ const mo=e.target.closest("tr[data-month]"); if(mo&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); openMonth(mo.dataset.month); } });
+$("#vMonth").onclick=()=>{ state.view="month"; render(); };
+$("#vYear").onclick=()=>{ state.view="year"; state.cat=null; render(); };
+$("#q").addEventListener("input",e=>{ state.q=e.target.value; render(); });
+function shiftMonth(k){ if(state.view==="year") k*=12;  const [y,m]=state.ym.split("-").map(Number); const d=new Date(y,m-1+k,1); state.ym=`${d.getFullYear()}-${pad(d.getMonth()+1)}`; state.cat=null; render(); }
 $("#prevM").onclick=()=>shiftMonth(-1);
 $("#nextM").onclick=()=>shiftMonth(1);
 $("#fab").onclick=()=>openEntry();
