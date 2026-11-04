@@ -60,6 +60,8 @@ button{cursor:pointer}
 @media (min-width:821px){.search{flex:0 1 280px;order:0}}
 @media (max-width:620px){.top{position:static}.brand{flex-basis:100%}}
 .sub{font-size:13px;color:var(--muted);margin-top:2px}
+.lrow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mini{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:1px 10px;font-size:12px;color:var(--income);letter-spacing:0}
 .cat.static:hover{background:none}
 .ychart{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 8px 8px}
 .ycol{border:0;background:none;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:0;border-radius:6px;min-width:0}
@@ -244,13 +246,13 @@ h2{font-size:14px;font-weight:700;letter-spacing:.08em;margin:0 0 10px;color:var
   <footer class="foot"><span>ログイン中:<span id="who"></span></span><button type="button" class="linkbtn" id="logout">ログアウト</button></footer>
 </main>
 
-<button class="fab" id="fab">＋ 現金を記録</button>
+<button class="fab" id="fab">＋ 記録する</button>
 </div>
 
 <!-- entry sheet -->
 <div class="backdrop" id="entrySheet" hidden>
   <form class="sheet" id="entryForm" novalidate>
-    <div class="shead"><h3 id="entryTitle">現金の記録</h3><button type="button" class="iconbtn" data-close aria-label="閉じる">×</button></div>
+    <div class="shead"><h3 id="entryTitle">記録を追加</h3><button type="button" class="iconbtn" data-close aria-label="閉じる">×</button></div>
     <div class="seg" role="group" aria-label="種類">
       <button type="button" id="tExp" aria-pressed="true">支出</button>
       <button type="button" id="tInc" aria-pressed="false">収入</button>
@@ -260,9 +262,9 @@ h2{font-size:14px;font-weight:700;letter-spacing:.08em;margin:0 0 10px;color:var
       <div class="field"><label for="fDate">日付</label><input id="fDate" type="date"></div>
       <div class="field"><label for="fCat">カテゴリ</label><select id="fCat"></select></div>
     </div>
-    <div class="field"><label for="fMemo">お店・内容</label><input id="fMemo" autocomplete="off" placeholder="例:八百屋、ランチ代"></div>
-    <div class="field"><label for="fSource">支払い方法</label>
-      <select id="fSource"><option value="cash">現金</option><option value="paypay">PayPay</option><option value="other">その他</option></select></div>
+    <div class="field"><label for="fMemo" id="fMemoLbl">お店・内容</label><input id="fMemo" autocomplete="off" placeholder="例:八百屋、ランチ代"></div>
+    <div class="field"><label for="fSource" id="fSourceLbl">支払い方法</label>
+      <select id="fSource"><option value="cash">現金</option><option value="paypay">PayPay</option><option value="bank">銀行口座</option><option value="other">その他</option></select></div>
     <label class="check" id="rememberWrap" hidden><input type="checkbox" id="fRemember" checked> この取引先は次回の取り込みからこのカテゴリにする</label>
     <p class="err" id="fErr"></p>
     <div class="sacts">
@@ -302,7 +304,7 @@ h2{font-size:14px;font-weight:700;letter-spacing:.08em;margin:0 0 10px;color:var
 <script>
 (() => {
 const EXP_CATS = ["食費","外食","日用品","交通","趣味・娯楽","衣服・美容","医療","通信・サブスク","住まい・光熱","交際費","その他"];
-const INC_CATS = ["給与","送金受取","返金","ポイント・還元","その他収入"];
+const INC_CATS = ["給与","賞与","副業","送金受取","返金","ポイント・還元","その他収入"];
 const CAT_COLOR = {}; EXP_CATS.forEach((c,i)=>CAT_COLOR[c]=`var(--c${i})`);
 INC_CATS.forEach((c)=>CAT_COLOR[c]="var(--income)");
 const RULES = [
@@ -442,7 +444,7 @@ $("#logout").onclick=()=>auth.signOut();
 
 /* ---------- render ---------- */
 const sum = a=>a.reduce((s,t)=>s+(+t.amount||0),0);
-const srcLabel = t=>t.source==="paypay"?"PayPay":t.source==="cash"?"現金":"その他";
+const srcLabel = t=>({paypay:"PayPay",cash:"現金",bank:"銀行"})[t.source]||"その他";
 const sortDesc = a=>a.sort((x,y)=>(y.date+(y.time||"")).localeCompare(x.date+(x.time||"")));
 const nz = s=>String(s??"").normalize("NFKC").toLowerCase();
 function periodTxs(){ const key = state.view==="year"? state.ym.slice(0,4) : state.ym; return [...state.txs.values()].filter(t=>t.date && t.date.startsWith(key)); }
@@ -467,7 +469,7 @@ function summaryHTML(exp, inc, label, extra){
   const pct=v=>E?(v/E*100):0;
   return `<section class="summary">
     <div class="s-exp"><div class="lbl">${label}</div><div class="big num">${yen(E)}</div>${extra||""}</div>
-    <div><div class="lbl">収入</div><div class="mid num pos">${yen(I)}</div></div>
+    <div><div class="lbl lrow">収入<button type="button" class="mini" data-act="addIncome">＋ 収入を記録</button></div><div class="mid num pos">${yen(I)}</div></div>
     <div><div class="lbl">収支</div><div class="mid num ${D<0?"neg":"pos"}">${D<0?"−":"+"}${yen(Math.abs(D))}</div></div>
     <div class="split">
       <div class="splitbar" aria-hidden="true"><i style="width:${pct(ppE)}%;background:var(--c1)"></i><i style="width:${pct(cashE)}%;background:var(--c8)"></i><i style="width:${pct(otE)}%;background:var(--c10)"></i></div>
@@ -554,7 +556,7 @@ function render(){
   if(state.view==="year"){ app.innerHTML=yearHTML(y,txs); return; }
 
   const exp = txs.filter(t=>t.type==="expense"), inc = txs.filter(t=>t.type==="income");
-  let list = txs.filter(t=> state.src==="all" || t.source===state.src);
+  let list = txs.filter(t=> state.src==="all" || (state.src==="income" ? t.type==="income" : t.source===state.src));
   if(state.cat) list=list.filter(t=>t.category===state.cat);
   sortDesc(list);
   app.innerHTML = summaryHTML(exp,inc,"今月の支出") + `
@@ -566,10 +568,10 @@ function render(){
     <section>
       <h2>明細${state.cat?` ・ ${esc(state.cat)}`:""}</h2>
       <div class="filters">
-        ${[["all","すべて"],["paypay","PayPay"],["cash","現金"]].map(([k,l])=>`<button class="chip" data-src="${k}" aria-pressed="${state.src===k}">${l}</button>`).join("")}
+        ${[["all","すべて"],["paypay","PayPay"],["cash","現金"],["income","収入"]].map(([k,l])=>`<button class="chip" data-src="${k}" aria-pressed="${state.src===k}">${l}</button>`).join("")}
         ${state.cat?`<button class="chip" data-clearcat aria-pressed="true">${esc(state.cat)} ×</button>`:""}
       </div>
-      ${list.length? daysHTML(list,false) : `<p class="quiet">${txs.length?"条件に合う明細はありません。":"この月の記録はありません。右下の「現金を記録」か、CSVの取り込みから追加できます。"}</p>`}
+      ${list.length? daysHTML(list,false) : `<p class="quiet">${txs.length?"条件に合う明細はありません。":"この月の記録はありません。右下の「記録する」か、CSVの取り込みから追加できます。"}</p>`}
     </section>
   </div>`;
 }
@@ -596,6 +598,7 @@ $("#app").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.act==="import") openImport();
   else if(b.dataset.act==="add") openEntry();
+  else if(b.dataset.act==="addIncome"){ openEntry(); setType("income","給与"); }
   else if(b.dataset.cat!==undefined){ state.cat = state.cat===b.dataset.cat?null:b.dataset.cat; render(); }
   else if(b.dataset.src){ state.src=b.dataset.src; render(); }
   else if(b.hasAttribute("data-clearcat")){ state.cat=null; render(); }
@@ -623,10 +626,19 @@ function fillCats(sel, type, cur){
   sel.innerHTML = list.map(c=>`<option ${c===cur?"selected":""}>${c}</option>`).join("");
   if(cur && !list.includes(cur)) sel.insertAdjacentHTML("beforeend",`<option selected>${esc(cur)}</option>`);
 }
-function setType(t,cur){ eType=t; $("#tExp").setAttribute("aria-pressed",t==="expense"); $("#tInc").setAttribute("aria-pressed",t==="income"); fillCats($("#fCat"),t,cur); }
+function setType(t,cur){
+  const changed = eType!==t; eType=t;
+  $("#tExp").setAttribute("aria-pressed",t==="expense"); $("#tInc").setAttribute("aria-pressed",t==="income");
+  fillCats($("#fCat"),t,cur);
+  $("#fSourceLbl").textContent = t==="income" ? "受け取り方法" : "支払い方法";
+  $("#fMemoLbl").textContent = t==="income" ? "内容" : "お店・内容";
+  $("#fMemo").placeholder = t==="income" ? "例:11月分給料、ボーナス" : "例:八百屋、ランチ代";
+  if(!editing && changed) $("#fSource").value = t==="income" ? "bank" : "cash";
+}
 function openEntry(tx){
   editing = tx||null; delArmed=false;
-  $("#entryTitle").textContent = tx? "記録を編集" : "現金の記録";
+  $("#entryTitle").textContent = tx? "記録を編集" : "記録を追加";
+  eType="";
   setType(tx?tx.type:"expense", tx?tx.category:"食費");
   $("#fAmount").value = tx? tx.amount : "";
   $("#fDate").value = tx? tx.date : (today().startsWith(state.ym)? today() : state.ym+"-01");
@@ -638,8 +650,8 @@ function openEntry(tx){
   $("#entrySheet").hidden=false;
   if(!tx) setTimeout(()=>$("#fAmount").focus(),50);
 }
-$("#tExp").onclick=()=>setType("expense");
-$("#tInc").onclick=()=>setType("income");
+$("#tExp").onclick=()=>setType("expense", editing&&editing.type==="expense"?editing.category:"食費");
+$("#tInc").onclick=()=>setType("income", editing&&editing.type==="income"?editing.category:"給与");
 $("#fAmount").addEventListener("input",e=>{ const v=e.target.value.replace(/[^\d]/g,""); e.target.value = v; });
 $("#entryForm").addEventListener("submit",async e=>{
   e.preventDefault();
